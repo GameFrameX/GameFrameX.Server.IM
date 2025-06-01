@@ -1,20 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace web.Controllers
 {
     [Route("ws")]
     public class WebSocketController : Controller
     {
-
         public string Ip => this.Request.Headers["X-Real-IP"].FirstOrDefault() ?? this.Request.HttpContext.Connection.RemoteIpAddress.ToString();
 
         static long websocketIdSeed;
+
         /// <summary>
         /// 获取websocket分区
         /// </summary>
@@ -32,6 +28,7 @@ namespace web.Controllers
                 websocketId = websocketId
             };
         }
+
         [HttpGet("offline")]
         public object offline([FromQuery] long websocketId)
         {

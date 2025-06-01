@@ -9,10 +9,8 @@ using System.Text;
 
 namespace web
 {
-
     public class Startup
     {
-
         public Startup(IConfiguration configuration)
         {
             this.Configuration = configuration;
@@ -45,7 +43,7 @@ namespace web
                 Servers = new[] { "127.0.0.1:6001" }
             });
 
-            ImHelper.Instance.OnSend += (s, e) => 
+            ImHelper.Instance.OnSend += (s, e) =>
                 Console.WriteLine($"ImClient.SendMessage(server={e.Server},data={JsonConvert.SerializeObject(e.Message)})");
 
             ImHelper.EventBus(
@@ -54,7 +52,7 @@ namespace web
                     Console.WriteLine(t.clientId + "上线了");
                     var onlineUids = ImHelper.GetClientListByOnline();
                     ImHelper.SendMessage(t.clientId, onlineUids, $"用户{t.clientId}上线了");
-                }, 
+                },
                 t => Console.WriteLine(t.clientId + "下线了"));
         }
     }

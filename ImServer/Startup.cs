@@ -1,19 +1,15 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System;
 using System.Text;
 using FreeIM;
 
 namespace imServer
 {
-
     public class Startup
     {
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -30,7 +26,7 @@ namespace imServer
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Console.OutputEncoding = Encoding.GetEncoding("GB2312");
             Console.InputEncoding = Encoding.GetEncoding("GB2312");
-            
+
             app.UseDeveloperExceptionPage();
 
             app.UseFreeImServer(new ImServerOptions
