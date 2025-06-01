@@ -1,7 +1,4 @@
-﻿
-#if ns20
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,6 +35,7 @@ namespace FreeIM
                 this.clientId = clientId;
             }
         }
+
         internal async Task Acceptor(HttpContext context, Func<Task> next)
         {
             if (!context.WebSockets.IsWebSocketRequest) return;
@@ -72,11 +70,13 @@ namespace FreeIM
                     var incoming = await socket.ReceiveAsync(seg, CancellationToken.None);
                     var outgoing = new ArraySegment<byte>(buffer, 0, incoming.Count);
                 }
+
                 socket.Abort();
             }
             catch
             {
             }
+
             wslist.TryRemove(newid, out var oldcli);
             if (wslist.Any() == false) _clients.TryRemove(data.clientId, out var oldwslist);
             _redis.Eval($"if redis.call('HINCRBY', KEYS[1], '{data.clientId}', '-1') <= 0 then redis.call('HDEL', KEYS[1], '{data.clientId}') end return 1", new[] { $"{_redisPrefix}Online" });
@@ -94,12 +94,34 @@ namespace FreeIM
                     if (long.TryParse(msgtxt.Substring(24), out var clientId) && _clients.TryRemove(clientId, out var oldclients))
                         foreach (var oldcli in oldclients)
                         {
-                            try { oldcli.Value.socket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "disconnect", CancellationToken.None).GetAwaiter().GetResult(); } catch { }
-                            try { oldcli.Value.socket.Abort(); } catch { }
-                            try { oldcli.Value.socket.Dispose(); } catch { }
+                            try
+                            {
+                                oldcli.Value.socket.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "disconnect", CancellationToken.None).GetAwaiter().GetResult();
+                            }
+                            catch
+                            {
+                            }
+
+                            try
+                            {
+                                oldcli.Value.socket.Abort();
+                            }
+                            catch
+                            {
+                            }
+
+                            try
+                            {
+                                oldcli.Value.socket.Dispose();
+                            }
+                            catch
+                            {
+                            }
                         }
+
                     return;
                 }
+
                 IEnumerable<long> receiveClientIds = null;
                 (long senderClientId, List<long>, string content, bool receipt) data;
                 if (msgtxt.StartsWith("__FreeIM__(ChanMessage)"))
@@ -108,8 +130,7 @@ namespace FreeIM
                     data.senderClientId = chanData.senderClientId;
                     data.content = chanData.content;
                     data.receipt = false;
-                    receiveClientIds = string.IsNullOrEmpty(chanData.receiveChan) ? _clients.Keys :
-                                           _redis.HKeys($"{_redisPrefix}Chan{chanData.receiveChan}").Select(a => long.TryParse(a, out var tryval) ? tryval : 0).Where(a => a != 0).ToList();
+                    receiveClientIds = string.IsNullOrEmpty(chanData.receiveChan) ? _clients.Keys : _redis.HKeys($"{_redisPrefix}Chan{chanData.receiveChan}").Select(a => long.TryParse(a, out var tryval) ? tryval : 0).Where(a => a != 0).ToList();
                 }
                 else
                 {
@@ -146,9 +167,29 @@ namespace FreeIM
                               if (t.Exception != null)
                               {
                                   var ws = state as WebSocket;
-                                  try { await ws.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "disconnect", CancellationToken.None); } catch { }
-                                  try { ws.Abort(); } catch { }
-                                  try { ws.Dispose(); } catch { }
+                                  try
+                                  {
+                                      await ws.CloseAsync(WebSocketCloseStatus.EndpointUnavailable, "disconnect", CancellationToken.None);
+                                  }
+                                  catch
+                                  {
+                                  }
+
+                                  try
+                                  {
+                                      ws.Abort();
+                                  }
+                                  catch
+                                  {
+                                  }
+
+                                  try
+                                  {
+                                      ws.Dispose();
+                                  }
+                                  catch
+                                  {
+                                  }
                               }
                           }, sh.socket);
 
@@ -167,5 +208,3 @@ namespace FreeIM
         }
     }
 }
-
-#endif
