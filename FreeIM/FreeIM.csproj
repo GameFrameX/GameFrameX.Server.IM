@@ -18,7 +18,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<DocumentationFile>FreeIM.xml</DocumentationFile>
+		<DocumentationFile>bin\Debug\net8.0\FreeIM.xml</DocumentationFile>
 		<WarningLevel>3</WarningLevel>
 	</PropertyGroup>
 
