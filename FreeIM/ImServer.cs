@@ -38,15 +38,24 @@ namespace FreeIM
 
         internal async Task Acceptor(HttpContext context, Func<Task> next)
         {
-            if (!context.WebSockets.IsWebSocketRequest) return;
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                return;
+            }
 
             string token = context.Request.Query["token"];
-            if (string.IsNullOrEmpty(token)) return;
-            var token_value = _redis.Get($"{_redisPrefix}Token{token}");
-            if (string.IsNullOrEmpty(token_value))
-                throw new Exception("授权错误：用户需通过 ImHelper.PrevConnectServer 获得包含 token 的连接");
+            if (string.IsNullOrEmpty(token))
+            {
+                return;
+            }
 
-            var data = JsonConvert.DeserializeObject<(long clientId, string clientMetaData)>(token_value);
+            var tokenValue = _redis.Get($"{_redisPrefix}Token{token}");
+            if (string.IsNullOrEmpty(tokenValue))
+            {
+                throw new Exception("授权错误：用户需通过 ImHelper.PrevConnectServer 获得包含 token 的连接");
+            }
+
+            var data = JsonConvert.DeserializeObject<(long clientId, string clientMetaData)>(tokenValue);
 
             var socket = await context.WebSockets.AcceptWebSocketAsync();
             var cli = new ImServerClient(socket, data.clientId);
@@ -57,7 +66,7 @@ namespace FreeIM
             using (var pipe = _redis.StartPipe())
             {
                 pipe.HIncrBy($"{_redisPrefix}Online", data.clientId.ToString(), 1);
-                pipe.Publish($"evt_{_redisPrefix}Online", token_value);
+                pipe.Publish($"evt_{_redisPrefix}Online", tokenValue);
                 pipe.EndPipe();
             }
 
@@ -78,10 +87,14 @@ namespace FreeIM
             }
 
             wslist.TryRemove(newid, out var oldcli);
-            if (wslist.Any() == false) _clients.TryRemove(data.clientId, out var oldwslist);
+            if (wslist.Any() == false)
+            {
+                _clients.TryRemove(data.clientId, out var oldwslist);
+            }
+
             _redis.Eval($"if redis.call('HINCRBY', KEYS[1], '{data.clientId}', '-1') <= 0 then redis.call('HDEL', KEYS[1], '{data.clientId}') end return 1", new[] { $"{_redisPrefix}Online" });
             LeaveChan(data.clientId, GetChanListByClientId(data.clientId));
-            _redis.Publish($"evt_{_redisPrefix}Offline", token_value);
+            _redis.Publish($"evt_{_redisPrefix}Offline", tokenValue);
         }
 
         void RedisSubScribleMessage(string chan, object msg)
@@ -92,6 +105,7 @@ namespace FreeIM
                 if (msgtxt.StartsWith("__FreeIM__(ForceOffline)"))
                 {
                     if (long.TryParse(msgtxt.Substring(24), out var clientId) && _clients.TryRemove(clientId, out var oldclients))
+                    {
                         foreach (var oldcli in oldclients)
                         {
                             try
@@ -118,6 +132,7 @@ namespace FreeIM
                             {
                             }
                         }
+                    }
 
                     return;
                 }
@@ -146,11 +161,14 @@ namespace FreeIM
                     {
                         //Console.WriteLine($"websocket{clientId} 离线了，{data.content}" + (data.receipt ? "【需回执】" : ""));
                         if (data.senderClientId != 0 && clientId != data.senderClientId && data.receipt)
+                        {
                             SendMessage(clientId, new[] { data.senderClientId }, new
                             {
                                 data.content,
                                 receipt = "用户不在线"
                             });
+                        }
+
                         continue;
                     }
 
@@ -158,9 +176,13 @@ namespace FreeIM
 
                     //如果接收消息人是发送者，并且接收者只有1个以下，则不发送
                     //只有接收者为多端时，才转发消息通知其他端
-                    if (clientId == data.senderClientId && sockarray.Length <= 1) continue;
+                    if (clientId == data.senderClientId && sockarray.Length <= 1)
+                    {
+                        continue;
+                    }
 
                     foreach (var sh in sockarray)
+                    {
                         sh.socket.SendAsync(outgoing, WebSocketMessageType.Text, true, CancellationToken.None)
                           .ContinueWith(async (t, state) =>
                           {
@@ -192,13 +214,16 @@ namespace FreeIM
                                   }
                               }
                           }, sh.socket);
+                    }
 
                     if (data.senderClientId != 0 && clientId != data.senderClientId && data.receipt)
+                    {
                         SendMessage(clientId, new[] { data.senderClientId }, new
                         {
                             data.content,
                             receipt = "发送成功"
                         });
+                    }
                 }
             }
             catch (Exception ex)

@@ -15,19 +15,24 @@ namespace FreeIM
         /// 发送者的客户端id
         /// </summary>
         public long SenderClientId { get; }
+
         /// <summary>
         /// 接收者的客户端id
         /// </summary>
         public List<long> ReceiveClientId { get; } = new List<long>();
+
         public string Chan { get; internal set; }
+
         /// <summary>
         /// imServer 服务器节点
         /// </summary>
         public string Server { get; }
+
         /// <summary>
         /// 消息
         /// </summary>
         public object Message { get; }
+
         /// <summary>
         /// 是否回执
         /// </summary>
