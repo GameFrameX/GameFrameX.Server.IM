@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using System.Text;
+using FreeIM;
 
 Console.WriteLine(typeof((Guid clientId, string clientMetaData)));
 Console.WriteLine(typeof(Tuple<Guid, string>));

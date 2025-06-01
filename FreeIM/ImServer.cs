@@ -1,7 +1,6 @@
 ﻿
 #if ns20
 
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System;
@@ -12,44 +11,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
-public static class FreeImServerExtenssions
-{
-    static bool isUseWebSockets = false;
-
-    /// <summary>
-    /// 启用 ImServer 服务端
-    /// </summary>
-    /// <param name="app"></param>
-    /// <param name="options"></param>
-    /// <returns></returns>
-    public static IApplicationBuilder UseFreeImServer(this IApplicationBuilder app, ImServerOptions options)
-    {
-        app.Map(options.PathMatch, appcur =>
-        {
-            var imserv = new ImServer(options);
-            if (isUseWebSockets == false)
-            {
-                isUseWebSockets = true;
-                appcur.UseWebSockets();
-            }
-            appcur.Use((ctx, next) =>
-                imserv.Acceptor(ctx, next));
-        });
-        return app;
-    }
-}
-
-/// <summary>
-/// im 核心类实现的配置所需
-/// </summary>
-public class ImServerOptions : ImClientOptions
-{
-    /// <summary>
-    /// 设置服务名称，它应该是 servers 内的一个
-    /// </summary>
-    public string Server { get; set; }
-}
 
 class ImServer : ImClient
 {

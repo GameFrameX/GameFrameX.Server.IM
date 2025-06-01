@@ -79,6 +79,7 @@ public class ImClient
             if (redata.ContainsKey(server) == false) redata.Add(server, new ImSendEventArgs(server, senderClientId, message, receipt));
             redata[server].ReceiveClientId.Add(uid);
         }
+
         var messageJson = JsonConvert.SerializeObject(message, _jsonSerializerSettings);
         using (var pipe = _redis.StartPipe())
         {
@@ -86,8 +87,9 @@ public class ImClient
             {
                 OnSend?.Invoke(this, sendArgs);
                 pipe.Publish($"{_redisPrefix}Server{sendArgs.Server}",
-                    JsonConvert.SerializeObject((senderClientId, sendArgs.ReceiveClientId, messageJson, sendArgs.Receipt), _jsonSerializerSettings));
+                             JsonConvert.SerializeObject((senderClientId, sendArgs.ReceiveClientId, messageJson, sendArgs.Receipt), _jsonSerializerSettings));
             }
+
             pipe.EndPipe();
         }
     }
@@ -110,6 +112,7 @@ public class ImClient
     {
         return _redis.HGet<long>($"{_redisPrefix}Online", clientId.ToString()) > 0;
     }
+
     /// <summary>
     /// 判断客户端是否在线
     /// </summary>
@@ -165,14 +168,16 @@ public class ImClient
             {
                 if (string.IsNullOrEmpty(chan)) continue;
                 pipe.Eval($"if redis.call('HSETNX',KEYS[1],ARGV[1],0)==1 then redis.call('HSET',KEYS[2],ARGV[2],0) redis.call('HINCRBY',KEYS[3],ARGV[2],1) end return 1",
-                    new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
+                          new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
                 //pipe.HSet($"{_redisPrefix}Chan{chan}", clientId.ToString(), 0);
                 //pipe.HSet($"{_redisPrefix}Client{clientId}", chan, 0);
                 //pipe.HIncrBy($"{_redisPrefix}ListChan", chan, 1);
             }
+
             pipe.EndPipe();
         }
     }
+
     /// <summary>
     /// 离开群聊频道
     /// </summary>
@@ -187,14 +192,16 @@ public class ImClient
             {
                 if (string.IsNullOrEmpty(chan)) continue;
                 pipe.Eval($"if redis.call('HDEL',KEYS[1],ARGV[1])==1 then redis.call('HDEL',KEYS[2],ARGV[2]) if redis.call('HINCRBY',KEYS[3],ARGV[2],-1)<=0 then redis.call('HDEL',KEYS[3],ARGV[2]) end end return 1",
-                    new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
+                          new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
                 //pipe.HDel($"{_redisPrefix}Chan{chan}", clientId.ToString());
                 //pipe.HDel($"{_redisPrefix}Client{clientId}", chan);
                 //pipe.Eval($"if redis.call('HINCRBY', KEYS[1], '{chan}', '-1') <= 0 then redis.call('HDEL', KEYS[1], '{chan}') end return 1", new[] { $"{_redisPrefix}ListChan" });
             }
+
             pipe.EndPipe();
         }
     }
+
     /// <summary>
     /// 离开群聊频道
     /// </summary>
@@ -210,14 +217,16 @@ public class ImClient
             {
                 if (string.IsNullOrEmpty(chan)) continue;
                 pipe.Eval($"if redis.call('HDEL',KEYS[1],ARGV[1])==1 then redis.call('HDEL',KEYS[2],ARGV[2]) if redis.call('HINCRBY',KEYS[3],ARGV[2],-1)<=0 then redis.call('HDEL',KEYS[3],ARGV[2]) end end return 1",
-                    new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
+                          new[] { $"{_redisPrefix}Chan{chan}", $"{_redisPrefix}Client{clientId}", $"{_redisPrefix}ListChan" }, new object[] { clientId, chan });
                 //pipe.HDel($"{_redisPrefix}Chan{chan}", clientId.ToString());
                 //pipe.HDel($"{_redisPrefix}Client{clientId}", chan);
                 //pipe.Eval($"if redis.call('HINCRBY', KEYS[1], '{chan}', '-1') <= 0 then redis.call('HDEL', KEYS[1], '{chan}') end return 1", new[] { $"{_redisPrefix}ListChan" });
             }
+
             pipe.EndPipe();
         }
     }
+
     /// <summary>
     /// 获取群聊频道所有客户端id（测试）
     /// </summary>
@@ -228,6 +237,7 @@ public class ImClient
         if (string.IsNullOrEmpty(chan)) return new long[0];
         return _redis.HKeys($"{_redisPrefix}Chan{chan}").Select(a => long.TryParse(a, out var tryval) ? tryval : 0).Where(a => a != 0).ToArray();
     }
+
     /// <summary>
     /// 清理群聊频道的离线客户端（测试）
     /// </summary>
@@ -248,6 +258,7 @@ public class ImClient
                 length = start + 10;
                 start = 0;
             }
+
             var slice = span.Slice(start, length);
             var hvals = _redis.HMGet($"{_redisPrefix}Online", slice.ToArray().Select(b => b.ToString()).ToArray());
             for (var a = length - 1; a >= 0; a--)
@@ -259,6 +270,7 @@ public class ImClient
                 }
             }
         }
+
         //删除离线订阅
         if (offline.Any()) _redis.HDel($"{_redisPrefix}Chan{chan}", offline.ToArray());
     }
@@ -272,6 +284,7 @@ public class ImClient
         var ret = _redis.HGetAll<long>($"{_redisPrefix}ListChan");
         return ret.Select(a => (a.Key, a.Value));
     }
+
     /// <summary>
     /// 获取用户参与的所有群聊频道
     /// </summary>
@@ -281,6 +294,7 @@ public class ImClient
     {
         return _redis.HKeys($"{_redisPrefix}Client{clientId}");
     }
+
     /// <summary>
     /// 获取群聊频道的在线人数
     /// </summary>
@@ -309,13 +323,16 @@ public class ImClient
                 OnSend?.Invoke(this, arg);
                 pipe.Publish($"{_redisPrefix}Server{arg.Server}", $"__FreeIM__(ChanMessage){JsonConvert.SerializeObject((senderClientId, chan, messageJson), _jsonSerializerSettings)}");
             }
+
             pipe.EndPipe();
         }
     }
+
     /// <summary>
     /// 发送广播消息
     /// </summary>
     /// <param name="message">消息</param>
     public void SendBroadcastMessage(object message) => SendChanMessage(0, null, message);
+
     #endregion
 }
