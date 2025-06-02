@@ -10,7 +10,7 @@ namespace FreeIM
 {
     public static class FreeImServerExtensions
     {
-        static bool _isUseWebSockets = false;
+        private static bool _isUseWebSockets = false;
 
         /// <summary>
         /// 启用 ImServer 服务端
@@ -20,17 +20,17 @@ namespace FreeIM
         /// <returns></returns>
         public static IApplicationBuilder UseFreeImServer(this IApplicationBuilder app, ImServerOptions options)
         {
-            app.Map(options.PathMatch, appcur =>
+            app.Map(options.PathMatch, builder =>
             {
-                var imserv = new ImServer(options);
+                var imServer = new ImServer(options);
                 if (_isUseWebSockets == false)
                 {
                     _isUseWebSockets = true;
-                    appcur.UseWebSockets();
+                    builder.UseWebSockets();
                 }
 
-                appcur.Use((ctx, next) =>
-                               imserv.Acceptor(ctx, next));
+                builder.Use((ctx, next) =>
+                                imServer.Acceptor(ctx, next));
             });
             return app;
         }
